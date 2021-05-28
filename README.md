@@ -1,3 +1,1 @@
-# testament
-# ICO
 # ICO
