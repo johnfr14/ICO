@@ -4,9 +4,16 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract SarahRo is ERC20, Ownable {
 
+contract SarahRo is ERC20, Ownable {
+    
     constructor() ERC20("SarahRo", "SRO") {
-        _mint(msg.sender, 1000000 * 10 ** decimals());
+        _mint(msg.sender, 1000000000 * 10 ** decimals());
     }
+
+    function approve(address owner_, address spender, uint256 amount) public virtual returns (bool) {
+        _approve(owner_, spender, amount);
+        return true;
+    }
+
 }
