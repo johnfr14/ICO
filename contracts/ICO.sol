@@ -6,17 +6,19 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./SarahRo.sol";
 
-/** @title ICO */
+/// @title ICO of SRO token
+/// @author Tondelier Jonathan
+/// @notice You can use this contract for only the most basic simulation
+/// @dev All function calls are currently implemented without side effects
 contract ICO is Ownable {
 
     using Address for address payable;
 
     SarahRo private _sarahro;
 
-    mapping(address => uint256) private _balances;
-
     uint256 private _rate;
     uint256 private _supply;
+    uint256 private _weiGained;
     uint256 private _endIco;
 
     event Bought(address indexed sender, uint256 amount);
@@ -39,13 +41,14 @@ contract ICO is Ownable {
      *      We will also set up a timer for 2weeks that will allow investor to buy the tokens of this ico.
      *      the owner will decide the change rate between the tokens and the ethers.
      *      And finally the owner of SRO will approve this contract to spend a certain amount of tokens during this ico.
+     * 
      *      
      */
-    constructor(address sarahroAddress, uint256 rate_, uint256 amountToSell) {
+    constructor(address sarahroAddress, uint256 amountToSell) {
     _sarahro = SarahRo(sarahroAddress);
     require(msg.sender == _sarahro.owner(), "ICO: only the owner of the SRO can deploy this ICO");
     _endIco = block.timestamp + 2 weeks;
-    _rate = rate_;
+    _rate = 1e9;
     _supply = amountToSell;
     _sarahro.approve(msg.sender, address(this), amountToSell);
     } 
@@ -64,7 +67,7 @@ contract ICO is Ownable {
             revert("SarahRo: there is not enought SRO remaining for your demand");
         }
         _sarahro.transferFrom(owner(), msg.sender, amountSRO);
-        _supply -= amountSRO;
+        _weiGained += msg.value;
         emit Bought(msg.sender, amountSRO);
     }
 
@@ -74,7 +77,7 @@ contract ICO is Ownable {
             revert("SarahRo: there is not enought SRO remaining for your demand");
         }
         _sarahro.transferFrom(owner(), msg.sender, amountSRO);
-        _supply -= amountSRO;
+        _weiGained += msg.value;
         emit Bought(msg.sender, amountSRO);
     }
 
@@ -98,6 +101,13 @@ contract ICO is Ownable {
         return _sarahro.totalSupply();
     }
 
+    /**
+    * @dev supply remaining to be sold :
+    *      check how many token has been sold
+    */
+    function tokenPrice() public view returns (uint256) {
+        return _supply - _sarahro.allowance(owner(), address(this));
+    }
 
     /**
     * @dev supply remaining to be sold :
@@ -108,11 +118,27 @@ contract ICO is Ownable {
     }
 
     /**
+    * @dev supply remaining to be sold :
+    *      check how many token has been sold
+    */
+    function totalTokenSold() public view onlyOwner() returns (uint256) {
+        return _supply - _sarahro.allowance(owner(), address(this));
+    }
+
+    /**
+    * @dev supply remaining to be sold :
+    *      check how many wei as been gained
+    */
+    function totalWeiGained() public view onlyOwner() returns (uint256) {
+        return _weiGained;
+    }
+
+    /**
     * @dev balance of :
     *      check how many token investors has in their wallets
     */
     function balanceOf(address account) public view returns (uint256) {
-        return _sarahro.balanceOf(account);
+        return  _sarahro.balanceOf(account);
     }
 
     /**

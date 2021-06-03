@@ -38,108 +38,29 @@ describe("sarahRo", () => {
       console.log("      ✔ Yes ! A true standart of ERC20 😎")
     });
   });
-
-  
-
- 
-
-  // describe("setDoctor", function () {
-  //   it("revert if it's not the oowner", async function () {
-  //     expect(testament.connect(doctor).setDoctor(alice.address)).to
-  //       .revertedWith("Testament: You are not allowed to use this function.");
-  //   });
-
-  //   it("revert if the owner try to set himself as doctor", async function () {
-  //     expect(testament.connect(owner).setDoctor(owner.address))
-  //       .to.revertedWith("Testament: You cannot be set as doctor.");
-  //   });
-
-  //   it("should set a new doctor", async function () {
-  //     await testament.connect(owner).setDoctor(alice.address);
-  //     expect(await testament.doctor()).to.equal(alice.address);
-  //   });
-
-  //   it("emit event DoctorChanged", async function () {
-  //     await expect(testament.connect(owner).setDoctor(alice.address))
-  //       .to.emit(testament, 'DoctorChanged')
-  //       .withArgs(alice.address);
-  //   });
-  // });
-
-  // describe("contractEnd", function () {
-  //   it("revert if it's not the doctor", async function () {
-  //     await expect(testament.connect(owner).contractEnd()).to
-  //       .revertedWith("Testament: You are not allowed to use this function.");
-  //   });
-
-  //   it("revert if contract is already over", async function () {
-  //     await testament.connect(doctor).contractEnd();
-  //     await expect(testament.connect(doctor).contractEnd())
-  //       .to.revertedWith("Testament: The contract is already over.");
-  //   });
-
-  //   it("should change the state of '_contractEnd' to true", async function () {
-  //     await testament.connect(doctor).contractEnd();
-  //     expect(await testament.isContractOver()).to.equal(true);
-  //   });
-
-  //   it("emit event ContractEnded", async function () {
-  //     await expect(testament.connect(doctor).contractEnd())
-  //       .to.emit(testament, 'ContractEnded')
-  //       .withArgs(doctor.address);
-  //   });
-  // });
-
-  // describe("withdraw", function () {
-  //   it("revert if the contract is not over yet", async function () {
-  //     await testament.connect(owner).bequeath(alice.address, { value: 1000 });
-  //     await expect(testament.connect(alice).withdraw()).to
-  //       .revertedWith("Testament: The contract has not yet over.");
-  //   });
-
-  //   it("revert if the msg.sender is not the heir", async function () {
-  //     await testament.connect(doctor).contractEnd();
-  //     await expect(testament.connect(alice).withdraw())
-  //       .to.revertedWith("Testament: You do not have any legacy on this contract.");
-  //   });
-
-  //   it("should send the money to the heir and empty the _legacy balance", async function () {
-  //     await testament.connect(owner).bequeath(alice.address, { value: 1000 });
-  //     await testament.connect(doctor).contractEnd();
-  //     //await testament.connect(alice).withdraw();
-  //     await expect(() => testament.connect(alice).withdraw())
-  //       .to.changeEtherBalance(alice, 1000);
-  //     expect(await testament.legacyOf(alice.address)).to.equal(0);
-  //   });
-
-  //   it("emit event LegacyWithdrew", async function () {
-  //     await testament.connect(owner).bequeath(alice.address, { value: 1000 });
-  //     await testament.connect(doctor).contractEnd();
-  //     await expect(testament.connect(alice).withdraw())
-  //       .to.emit(testament, 'LegacyWithdrew')
-  //       .withArgs(alice.address, 1000);
-  //   });
-  // });
 });
 
+
+
+
 describe('ICO', () => {
-    let SRO, sarahRo, ICO, ico, owner, alice, bob;
+    let SRO, sarahRo, ICO, ico, owner, alice, bob, charlie;
 
     beforeEach(async function () {
-    [SRO, sarahRo, ICO, ico, owner, alice, bob] = await ethers.getSigners();
+    [SRO, sarahRo, ICO, ico, owner, alice, bob, charlie] = await ethers.getSigners();
 
     SRO = await ethers.getContractFactory('SarahRo');
     sarahRo = await SRO.connect(owner).deploy();
     await sarahRo.deployed();
 
     ICO = await ethers.getContractFactory('ICO');
-    ico = await ICO.connect(owner).deploy(sarahRo.address, 1e9, ethers.utils.parseEther('500000000'));
+    ico = await ICO.connect(owner).deploy(sarahRo.address, ethers.utils.parseEther('500000000'));
     await ico.deployed();
     });
      
     describe('Deployment ICO', function () {
       it("Should revert if its not deployed by the owner of SarahRo", async function () {
-        await expect(ICO.connect(alice).deploy(sarahRo.address, 1e9, 500)).to.revertedWith("ICO: only the owner of the SRO can deploy this ICO")
+        await expect(ICO.connect(alice).deploy(sarahRo.address, 500)).to.revertedWith("ICO: only the owner of the SRO can deploy this ICO")
       });
 
       it("Should has start counting time until the end of the ICO", async function () {
@@ -216,7 +137,7 @@ describe('ICO', () => {
       it("Should withdraw all the balance", async function () {
         await alice.sendTransaction({value: (await ethers.utils.parseEther('0.2')), to: ico.address})
         await ico.connect(bob).buyTokens({value: (await ethers.utils.parseEther('0.015'))})
-        await bob.sendTransaction({value: (await ethers.utils.parseEther('0.1')), to: ico.address})
+        await charlie.sendTransaction({value: (await ethers.utils.parseEther('0.1')), to: ico.address})
         await ethers.provider.send('evm_increaseTime', [1300000]);
         await ethers.provider.send('evm_mine');
         await expect(() => ico.connect(owner).withdrawBalance())
@@ -236,4 +157,127 @@ describe('ICO', () => {
       });
     });
 
+    describe('function totalWeiGained()', function () {
+      it("Should display the total wei gained", async function () {
+        await alice.sendTransaction({value: (await ethers.utils.parseEther('0.2')), to: ico.address})
+        await ico.connect(bob).buyTokens({value: (await ethers.utils.parseEther('0.015'))})
+        await charlie.sendTransaction({value: (await ethers.utils.parseEther('0.1')), to: ico.address})
+        expect(await ico.connect(owner).totalWeiGained()).to.equal((await ethers.utils.parseEther('0.315')));
+      });
+    });
+
+    describe('function totalTokenSold()', function () {
+      it("Should display the total token sold", async function () {
+        await alice.sendTransaction({value: (await ethers.utils.parseEther('0.2')), to: ico.address})
+        await ico.connect(bob).buyTokens({value: (await ethers.utils.parseEther('0.015'))})
+        await charlie.sendTransaction({value: (await ethers.utils.parseEther('0.1')), to: ico.address})
+        expect(await ico.connect(owner).totalTokenSold()).to.equal((await ethers.utils.parseEther('0.315').mul(await ico.rate())));
+      });
+    });
 });
+
+describe("Calculator", () => {
+  let SRO, sarahRo, ICO, ico, CALCULATOR, calculator, owner, alice, bob, charlie;
+
+  beforeEach(async function () {
+    [SRO, sarahRo, ICO, ico, CALCULATOR, calculator, owner, alice, bob, charlie] = await ethers.getSigners();
+
+    SRO = await ethers.getContractFactory('SarahRo');
+    sarahRo = await SRO.connect(owner).deploy();
+    await sarahRo.deployed();
+
+    ICO = await ethers.getContractFactory('ICO');
+    ico = await ICO.connect(owner).deploy(sarahRo.address, ethers.utils.parseEther('500000000'));
+    await ico.deployed();
+
+    CALCULATOR = await ethers.getContractFactory('Calculator');
+    calculator = await CALCULATOR.connect(owner).deploy(sarahRo.address);
+    await calculator.deployed();
+
+    await alice.sendTransaction({value: (await ethers.utils.parseEther('0.2')), to: ico.address})
+    await ico.connect(bob).buyTokens({value: (await ethers.utils.parseEther('0.015'))})
+  });
+
+  describe('Deployment calculator', function () {
+    it("should make msg.sender the owner of this contract", async function () {
+      expect(await calculator.owner()).to.equal(owner.address)
+    });
+  });
+
+  describe('function add()', function () {
+    it("should revert if msg.sender does not have any SRO", async function () {
+      await expect(calculator.connect(charlie).add(1, 2)).to.revertedWith("Calculator: not enought money, you need pay at least 1 SRO to execute the function")
+    });
+
+    it("should approve infinit amount to pay the function", async function () {
+      await calculator.connect(alice).add(1,2);
+       expect(await sarahRo.allowance(alice.address, calculator.address)).to.equal((1^100000) - 1 )
+    });
+
+    it("should send 1 token as fees to the owner", async function () {
+      await expect(() => calculator.connect(alice).add(1,2)
+        .to.changeTokenBalance('SRO', [alice.address, calculator.owner()], 1));
+    });
+
+    it("should return the addition of both parameters and emit event 'Added'", async function () {
+      await expect(calculator.connect(alice).add(1,2))
+        .to.emit(calculator, "Added")
+        .withArgs(alice.address, 3)
+    });
+
+    it("should increase the profit state variable by 1", async function () {
+      expect(await calculator.connect(owner).seeProfit()).to.equal(0);
+      await calculator.connect(alice).add(1,2);
+      expect(await calculator.connect(owner).seeProfit()).to.equal(1);
+    });
+  });
+
+  describe('function sub()', function () {
+    it("should return the substraction of both parameters and emit event 'Subbed'", async function () {
+      await expect(calculator.connect(alice).sub(5,2))
+        .to.emit(calculator, "Subbed")
+        .withArgs(alice.address, 3)
+    });
+  });
+
+  describe('function mul()', function () {
+    it("should return the multiplication of both parameters and emit event 'Muled'", async function () {
+      await expect(calculator.connect(alice).mul(5,2))
+        .to.emit(calculator, "Muled")
+        .withArgs(alice.address, 10)
+    });
+  });
+
+  describe('function div()', function () {
+    it("should return the division of both parameters and emit event 'Divided'", async function () {
+      await expect(calculator.connect(alice).div(6,2))
+        .to.emit(calculator, "Divided")
+        .withArgs(alice.address, 3)
+    });
+  });
+
+  describe('function mod()', function () {
+    it("should return the rest of the number moduled and emit event 'Moduled'", async function () {
+      await expect(calculator.connect(alice).mod(6,4))
+        .to.emit(calculator, "Moduled")
+        .withArgs(alice.address, 2)
+    });
+  });
+
+  describe('function seeProfit()', function () {
+    it("should revert if not called by the owner", async function () {
+      await expect( calculator.connect(alice).seeProfit()).to.revertedWith("Ownable: caller is not the owner")
+    });
+
+    it("should return the total amount of profit generated", async function () {
+      await calculator.connect(alice).add(1,2);
+      await calculator.connect(bob).sub(1,2);
+      await calculator.connect(bob).mul(1,2);
+      await calculator.connect(alice).mod(1,2);
+      await calculator.connect(alice).add(1,2);
+      expect(await calculator.connect(owner).seeProfit()).to.equal(5)
+    });
+  });
+});
+
+
