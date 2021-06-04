@@ -18,6 +18,7 @@ contract ICO is Ownable {
     uint256 private _supply;
     uint256 private _weiGained;
     uint256 private _endIco;
+    bool private _started;
 
     event Bought(address indexed sender, uint256 amount);
     event Withdrew(address indexed sender, uint256 amount);
@@ -66,6 +67,7 @@ contract ICO is Ownable {
      * @dev start ico :
      * @param supply_ We will set a supply to sell.
      * @notice We will also set up a timer for 2weeks that will allow investor to buy the tokens of this ico.
+     *         and set true the _started variable.
      *
      *  Requirement:
      *
@@ -74,9 +76,11 @@ contract ICO is Ownable {
      * - `msg.sender` can't set a supply bigger than he has approved.
      */
     function startIco(uint256 supply_) public onlyOwner() hasApproved(){
+        require(_started == false, "ICO: you already started the ico");
         require(_sarahro.allowance(msg.sender, address(this)) >= supply_, "ICO: You can't set an amount bigger than the amount you approved to this contract");
         _endIco = block.timestamp + 2 weeks;
         _supply = supply_;
+        _started = true;
     }
 
     /**

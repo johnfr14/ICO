@@ -82,6 +82,11 @@ describe('ICO', () => {
         await expect(ico.connect(alice).startIco(500)).to.revertedWith("Ownable: caller is not the owner")
       });
 
+      it("Should revert if owner try to start twice the ico", async function () {
+        await ico.connect(owner).startIco(500);
+        await expect(ico.connect(owner).startIco(5000)).to.revertedWith("ICO: you already started the ico")
+      });
+
       it("Should revert the owner of SRO still does not approved this contract", async function () {
         const ico2 = await ICO.connect(owner).deploy(sarahRo.address);
         await ico2.deployed();
