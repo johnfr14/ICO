@@ -28,4 +28,5 @@ git clone https://github.com/johnfr14/ICO.git
 cd ICO
 yarn
 yarn hardhat compile
+yarn hardhat test
 ```
