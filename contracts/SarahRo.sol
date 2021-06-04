@@ -11,9 +11,4 @@ contract SarahRo is ERC20, Ownable {
         _mint(msg.sender, 1000000000 * 10 ** decimals());
     }
 
-    function approve(address owner_, address spender, uint256 amount) public virtual returns (bool) {
-        _approve(owner_, spender, amount);
-        return true;
-    }
-
 }

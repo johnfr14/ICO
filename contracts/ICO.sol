@@ -8,8 +8,6 @@ import "./SarahRo.sol";
 
 /// @title ICO of SRO token
 /// @author Tondelier Jonathan
-/// @notice You can use this contract for only the most basic simulation
-/// @dev All function calls are currently implemented without side effects
 contract ICO is Ownable {
 
     using Address for address payable;
@@ -28,6 +26,10 @@ contract ICO is Ownable {
      * @dev ico is running :
      *      Will be useful for each function that require interraction with the investors,
      *      as long as the ico is running they can buy tokens.
+     *
+     *  Requirement:
+     *
+     * - `block.timestamp` must be superior than the end of ico
      */
     modifier icoIsRunning() {
         require(block.timestamp < _endIco, "ICO: Sorry this ico is already finnish go FOMO market buy on exchange");
@@ -36,30 +38,35 @@ contract ICO is Ownable {
 
      /**
      * @dev deployment of ico :
-     *      We will communicate the ico with the ERC20 sarahro.
-     *      Only the owner of SRO can deploy it.
-     *      We will also set up a timer for 2weeks that will allow investor to buy the tokens of this ico.
+     * @param sarahroAddress We will communicate the ico with the ERC20 sarahro.
+     * @param amountToSell Amount that will be sold.
+     * @notice We will also set up a timer for 2weeks that will allow investor to buy the tokens of this ico.
      *      the owner will decide the change rate between the tokens and the ethers.
      *      And finally the owner of SRO will approve this contract to spend a certain amount of tokens during this ico.
-     * 
-     *      
+     *
+     *  Requirement:
+     *
+     * - `msg.sender` must be the owner of SRO tokens 
      */
     constructor(address sarahroAddress, uint256 amountToSell) {
-    _sarahro = SarahRo(sarahroAddress);
-    require(msg.sender == _sarahro.owner(), "ICO: only the owner of the SRO can deploy this ICO");
-    _endIco = block.timestamp + 2 weeks;
-    _rate = 1e9;
-    _supply = amountToSell;
-    _sarahro.approve(msg.sender, address(this), amountToSell);
+        _sarahro = SarahRo(sarahroAddress);
+        require(msg.sender == _sarahro.owner(), "ICO: only the owner of the SRO can deploy this ICO");
+        _endIco = block.timestamp + 2 weeks;
+        _rate = 1e9;
+        _supply = amountToSell;
     } 
 
     /**
      * @dev receive and buy token :
-     *      these two functions are similar, people can use a function to buy token or send it directly ether into
-     *      the smart contract once sent the smart contract will transfer the amount depending of the rate of tokens,*
+     *      these two functions are similar, people can use a function to buy token or send it directly into
+     *      the smart contract once sent the smart contract will transfer the amount depending of the rate of tokens,
      *      from the owner of SRO tokens to the msg.sender.
      *      and reduce the supply remaining of this ico in order to check how many tokens is remaining.
      *      it revert if people try to buy more than it remains.
+     *
+     * Emits an {Bought} event indicating the purchase of tokens.
+     *
+     * Requirements: see modifier {icoIsRunning}.
      */
     receive() external payable icoIsRunning() {
         uint256 amountSRO = msg.value * _rate;
@@ -83,7 +90,14 @@ contract ICO is Ownable {
 
     /**
      * @dev withdraw balance :
-     *      Once and only once the ico is finish, the owner can withdraw all the balance of this contract 
+     *      Once and only once the ico is finish, the owner can withdraw all the balance of this contract.
+     *
+     * Emits an {Withdrew} event indicating the transaction amount.
+     *
+     * Requirements: see {Ownable.sol}.
+     *
+     * - `block.timestamp` must be superior to _endIco in order to withdraw all the balance of the contract.
+     * - `address(this).balance` must have at least 1 wei in his balance.
      */
     function withdrawBalance() public onlyOwner() {
         require(block.timestamp > _endIco, "ICO: Sorry this ico is still running, wait the end");
@@ -96,6 +110,7 @@ contract ICO is Ownable {
      /**
      * @dev total supply :
      *      can check the total supply of SRO created
+     * @return the total supply of SRO tokens
      */
     function totalSupply() public view returns (uint256) {
         return _sarahro.totalSupply();
@@ -104,6 +119,7 @@ contract ICO is Ownable {
     /**
     * @dev supply remaining to be sold :
     *      check how many token has been sold
+    * @return the price (in ether) of 1 SRO 
     */
     function tokenPrice() public view returns (uint256) {
         return _supply - _sarahro.allowance(owner(), address(this));
@@ -112,6 +128,7 @@ contract ICO is Ownable {
     /**
     * @dev supply remaining to be sold :
     *      check how many token investors can buy
+    * @return the price (in ether) of 1 SRO 
     */
     function supplyICORemaining() public view icoIsRunning() returns (uint256) {
         return _sarahro.allowance(owner(), address(this));
@@ -120,6 +137,7 @@ contract ICO is Ownable {
     /**
     * @dev supply remaining to be sold :
     *      check how many token has been sold
+    * @return the price (in ether) of 1 SRO 
     */
     function totalTokenSold() public view onlyOwner() returns (uint256) {
         return _supply - _sarahro.allowance(owner(), address(this));
