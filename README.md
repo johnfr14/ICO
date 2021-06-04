@@ -21,7 +21,7 @@
 
   Then people will be able to use their tokens to use the functionnalities of your best calculator ever 😎.
 
-## Usage
+## Installation
 
 ```
 git clone https://github.com/johnfr14/ICO.git
