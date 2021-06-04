@@ -10,5 +10,4 @@ contract SarahRo is ERC20, Ownable {
     constructor() ERC20("SarahRo", "SRO") {
         _mint(msg.sender, 1000000000 * 10 ** decimals());
     }
-
 }

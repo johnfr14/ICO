@@ -29,7 +29,7 @@ contract ICO is Ownable {
      *
      *  Requirement:
      *
-     * - `block.timestamp` must be superior than the end of ico
+     * - `block.timestamp` must be superior than the end of ico.
      */
     modifier icoIsRunning() {
         require(block.timestamp < _endIco, "ICO: Sorry this ico is already finnish go FOMO market buy on exchange");
@@ -46,7 +46,7 @@ contract ICO is Ownable {
      *
      *  Requirement:
      *
-     * - `msg.sender` must be the owner of SRO tokens 
+     * - `msg.sender` must be the owner of SRO tokens. 
      */
     constructor(address sarahroAddress, uint256 amountToSell) {
         _sarahro = SarahRo(sarahroAddress);
@@ -109,8 +109,8 @@ contract ICO is Ownable {
 
      /**
      * @dev total supply :
-     *      can check the total supply of SRO created
-     * @return the total supply of SRO tokens
+     *      
+     * @return the total supply of SRO tokens.
      */
     function totalSupply() public view returns (uint256) {
         return _sarahro.totalSupply();
@@ -118,8 +118,8 @@ contract ICO is Ownable {
 
     /**
     * @dev supply remaining to be sold :
-    *      check how many token has been sold
-    * @return the price (in ether) of 1 SRO 
+    *      
+    * @return the price (in ether) of 1 SRO. 
     */
     function tokenPrice() public view returns (uint256) {
         return _supply - _sarahro.allowance(owner(), address(this));
@@ -127,8 +127,8 @@ contract ICO is Ownable {
 
     /**
     * @dev supply remaining to be sold :
-    *      check how many token investors can buy
-    * @return the price (in ether) of 1 SRO 
+    *      
+    * @return check how many token investors can buy.
     */
     function supplyICORemaining() public view icoIsRunning() returns (uint256) {
         return _sarahro.allowance(owner(), address(this));
@@ -136,8 +136,8 @@ contract ICO is Ownable {
 
     /**
     * @dev supply remaining to be sold :
-    *      check how many token has been sold
-    * @return the price (in ether) of 1 SRO 
+    *     
+    * @return  check how many token has been sold. 
     */
     function totalTokenSold() public view onlyOwner() returns (uint256) {
         return _supply - _sarahro.allowance(owner(), address(this));
@@ -145,7 +145,8 @@ contract ICO is Ownable {
 
     /**
     * @dev supply remaining to be sold :
-    *      check how many wei as been gained
+    *      
+    * @return the total amount of token sold in wei.
     */
     function totalWeiGained() public view onlyOwner() returns (uint256) {
         return _weiGained;
@@ -153,7 +154,9 @@ contract ICO is Ownable {
 
     /**
     * @dev balance of :
-    *      check how many token investors has in their wallets
+    *      check how many token investors has in their wallets.
+    * @param account account to be checked. 
+    * @return the SRO balance of the account put in parameter. 
     */
     function balanceOf(address account) public view returns (uint256) {
         return  _sarahro.balanceOf(account);
@@ -161,7 +164,8 @@ contract ICO is Ownable {
 
     /**
     * @dev rate :
-    *      check the current change rate between SRO and ETH
+    *      
+    * @return the rate of conversion token between SRO and ETH. 
     */
     function rate() public view returns (uint256) {
         return _rate;
@@ -169,7 +173,8 @@ contract ICO is Ownable {
 
     /**
     * @dev time remaining :
-    *      precisely when this ico will end
+    *      
+    * @return a sentance describing how many time remain until the end of this ico.
     */
     function timeRemaining() public view returns(string memory, uint256, string memory, uint256, string memory, uint256, string memory, uint256, string memory) {
         uint256 day_ = ((_endIco - block.timestamp)  % 1209600) / 86400;
@@ -181,7 +186,8 @@ contract ICO is Ownable {
 
     /**
     * @dev second remaining :
-    *      check how many seconds it remains until the end of this ico 
+    *       
+    * @return how many second remain until the end of this ico.
     */
     function secondeRemaining() public view returns (uint256) {
         return _endIco - block.timestamp; 
