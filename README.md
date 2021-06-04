@@ -30,3 +30,8 @@ yarn
 yarn hardhat compile
 yarn hardhat test
 ```
+
+## Usage
+```
+yarn run hardhat docgen
+```
