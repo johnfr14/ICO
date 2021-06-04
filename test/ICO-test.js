@@ -22,7 +22,7 @@ describe("sarahRo", () => {
       expect(await sarahRo.totalSupply()).to.equal(ethers.utils.parseEther('1000000000'))
     });
 
-    it('should send 1.000.000.000 tokens to the owner of the contract', async function () {
+    it('should mint 1.000.000.000 tokens for the owner of the contract', async function () {
       const SRO2 = await ethers.getContractFactory('SarahRo');
       sarahRo = await SRO2.connect(owner).deploy();
       await sarahRo.deployed();
@@ -54,21 +54,22 @@ describe('ICO', () => {
     await sarahRo.deployed();
 
     ICO = await ethers.getContractFactory('ICO');
-    ico = await ICO.connect(owner).deploy(sarahRo.address, ethers.utils.parseEther('500000000'));
+    ico = await ICO.connect(owner).deploy(sarahRo.address);
     await ico.deployed();
     await sarahRo.connect(owner).approve(ico.address, ethers.utils.parseEther('500000000'));
+    ico.connect(owner).startIco(ethers.utils.parseEther('500000000'))
     });
      
     describe('Deployment ICO', function () {
       it("Should revert if its not deployed by the owner of SarahRo", async function () {
-        await expect(ICO.connect(alice).deploy(sarahRo.address, 500)).to.revertedWith("ICO: only the owner of the SRO can deploy this ICO")
+        await expect(ICO.connect(alice).deploy(sarahRo.address)).to.revertedWith("ICO: only the owner of the SRO can deploy this ICO")
       });
 
       it("Should has start counting time until the end of the ICO", async function () {
-        expect(await ico.secondeRemaining()).to.equal(1209599);
+        expect(await ico.secondeRemaining()).to.equal(1209600);
         await ethers.provider.send('evm_increaseTime', [10]);
         await ethers.provider.send('evm_mine');
-        expect(await ico.secondeRemaining()).to.equal(1209589);
+        expect(await ico.secondeRemaining()).to.equal(1209590);
       });
 
       it("Should has a rate as given when owner deployed the contract", async function () {
@@ -76,7 +77,44 @@ describe('ICO', () => {
       });
     });
 
+    describe('function startIco()', function () {
+      it("Should revert if its not deployed by the owner of SarahRo", async function () {
+        await expect(ico.connect(alice).startIco(500)).to.revertedWith("Ownable: caller is not the owner")
+      });
+
+      it("Should revert the owner of SRO still does not approved this contract", async function () {
+        const ico2 = await ICO.connect(owner).deploy(sarahRo.address);
+        await ico2.deployed();
+        await expect(ico2.connect(owner).startIco(500)).to.revertedWith("Calculator: you have to approve this contract first to start the ico")
+      });
+
+      it("Should revert the amount is bigger than the allowance made to the ico", async function () {
+        const ico2 = await ICO.connect(owner).deploy(sarahRo.address);
+        await ico2.deployed();
+        await sarahRo.connect(owner).approve(ico2.address, 1000);
+        await expect(ico2.connect(owner).startIco(2000)).to.revertedWith("ICO: You can't set an amount bigger than the amount you approved to this contract")
+      });
+
+      it("Should set timer on !", async function () {
+        await ethers.provider.send('evm_increaseTime', [9600]);
+        await ethers.provider.send('evm_mine');
+        expect (await ico.secondeRemaining()).to.equal(1200000)
+      });
+
+      it("Should set the supply for the ico", async function () {
+        await alice.sendTransaction({value: (await ethers.utils.parseEther('0.000000001')), to: ico.address});
+        expect (await ico.supplyICORemaining()).to.equal(ethers.utils.parseEther('499999999'))
+      });
+    });
+
     describe('receive() & function buyTokens()', function () {
+      it("Should revert if the ICO has not started yet", async function () {
+        const ico2 = await ICO.connect(owner).deploy(sarahRo.address);
+        await ico2.deployed();
+        await sarahRo.connect(owner).approve(ico2.address, (await ethers.utils.parseEther('100')));
+        await expect(ico2.connect(alice).buyTokens({value: (await ethers.utils.parseEther('1'))})).to.revertedWith("ICO: Sorry this ico has not started yet, be patient");
+      });
+
       it("Should revert if the ICO is finish", async function () {
         await ethers.provider.send('evm_increaseTime', [1209600]);
         await ethers.provider.send('evm_mine');
@@ -90,6 +128,12 @@ describe('ICO', () => {
 
       it("Should revert if the amount sent exceed the remaining balance of this ICO", async function () {
         await expect(alice.sendTransaction({value: (await ethers.utils.parseEther('10')), to: ico.address})).to.revertedWith("SarahRo: there is not enought SRO remaining for your demand");
+      });
+
+      it("Should emit event 'Transfer'", async function () {
+        await expect(alice.sendTransaction({value: (await ethers.utils.parseEther('0.1')), to: ico.address}))
+          .to.emit(sarahRo, 'Transfer')
+          .withArgs(owner.address, alice.address, (await ethers.utils.parseEther('100000000')));
       });
 
       it("Should decrease the supply total remaining", async function () {
@@ -147,13 +191,23 @@ describe('ICO', () => {
       });
     });
 
-    describe('function totalWeiGained()', function () {
-      it("Should display the total wei gained", async function () {
-        await alice.sendTransaction({value: (await ethers.utils.parseEther('0.2')), to: ico.address})
-        await ico.connect(bob).buyTokens({value: (await ethers.utils.parseEther('0.015'))})
-        await charlie.sendTransaction({value: (await ethers.utils.parseEther('0.1')), to: ico.address})
-        expect(await ico.connect(owner).totalWeiGained()).to.equal((await ethers.utils.parseEther('0.315')));
+    describe('function totalSupply()', function () {
+      it("Should display the total supply of SRO", async function () {
+        expect (await ico.totalSupply()).to.equal(ethers.utils.parseEther('1000000000'))
       });
+    });
+
+    describe('function tokenPrice()', function () {
+      it("Should display the price of SRO", async function () {
+        expect (await ico.tokenPrice()).to.equal(await ethers.utils.parseEther('0.000000001'))
+      });
+    });
+
+    describe('function supplyICORemaining()', function () {
+      it("Should display amount of token remaining", async function () {
+        await alice.sendTransaction({value: (await ethers.utils.parseEther('0.2')), to: ico.address})
+        expect (await ico.supplyICORemaining()).to.equal(ethers.utils.parseEther('300000000'))
+      });                                                                                     
     });
 
     describe('function totalTokenSold()', function () {
@@ -163,6 +217,36 @@ describe('ICO', () => {
         await charlie.sendTransaction({value: (await ethers.utils.parseEther('0.1')), to: ico.address})
         expect(await ico.connect(owner).totalTokenSold()).to.equal((await ethers.utils.parseEther('0.315').mul(await ico.rate())));
       });
+    });
+
+    describe('function totalWeiGained()', function () {
+      it("Should display the total wei gained", async function () {
+        await alice.sendTransaction({value: (await ethers.utils.parseEther('0.2')), to: ico.address})
+        await ico.connect(bob).buyTokens({value: (await ethers.utils.parseEther('0.015'))})
+        await charlie.sendTransaction({value: (await ethers.utils.parseEther('0.1')), to: ico.address})
+        expect(await ico.connect(owner).totalWeiGained()).to.equal((await ethers.utils.parseEther('0.315')));
+      });
+    });
+
+    describe('function balanceOf()', function () {
+      it("Should display token amount of the account put in parameter", async function () {
+        await alice.sendTransaction({value: (await ethers.utils.parseEther('0.2')), to: ico.address})
+        expect (await ico.balanceOf(alice.address)).to.equal(ethers.utils.parseEther('200000000'))
+      });                                                                                     
+    });
+
+    describe('function rate()', function () {
+      it("Should display the rate of conversion token between SRO and ETH.", async function () {
+        expect (await ico.rate()).to.equal(1e9)
+      });                                                                                     
+    });
+
+    describe('function secondRemaining()', function () {
+      it("Should return how many second remain until the end of this ico.", async function () {
+        await ethers.provider.send('evm_increaseTime', [10]);
+        await ethers.provider.send('evm_mine');
+        expect (await ico.secondeRemaining()).to.equal(1209590)
+      });                                                                                     
     });
 });
 
@@ -175,10 +259,6 @@ describe("Calculator", () => {
     SRO = await ethers.getContractFactory('SarahRo');
     sarahRo = await SRO.connect(owner).deploy();
     await sarahRo.deployed();
-
-    ICO = await ethers.getContractFactory('ICO');
-    ico = await ICO.connect(owner).deploy(sarahRo.address, ethers.utils.parseEther('500000000'));
-    await ico.deployed();
     await sarahRo.connect(owner).approve(ico.address, ethers.utils.parseEther('500000000'));
     await sarahRo.connect(owner).transfer(alice.address, 20)
     await sarahRo.connect(owner).transfer(bob.address, 20)

@@ -32,29 +32,52 @@ contract ICO is Ownable {
      * - `block.timestamp` must be superior than the end of ico.
      */
     modifier icoIsRunning() {
+        if (_endIco == 0) {
+            revert("ICO: Sorry this ico has not started yet, be patient");
+        }
         require(block.timestamp < _endIco, "ICO: Sorry this ico is already finnish go FOMO market buy on exchange");
         _;
+    }
+
+    /// @dev revert if the owner does not already approved this contract to spend SRO.
+    modifier hasApproved() {
+        if(_sarahro.allowance(msg.sender, address(this)) < 1) {
+            revert("Calculator: you have to approve this contract first to start the ico");    
+        }
+        _; 
     }
 
      /**
      * @dev deployment of ico :
      * @param sarahroAddress We will communicate the ico with the ERC20 sarahro.
-     * @param amountToSell Amount that will be sold.
-     * @notice We will also set up a timer for 2weeks that will allow investor to buy the tokens of this ico.
-     *      the owner will decide the change rate between the tokens and the ethers.
-     *      And finally the owner of SRO will approve this contract to spend a certain amount of tokens during this ico.
+     * @notice by default the rate is set at 1e9
      *
      *  Requirement:
      *
      * - `msg.sender` must be the owner of SRO tokens. 
      */
-    constructor(address sarahroAddress, uint256 amountToSell) {
+    constructor(address sarahroAddress) {
         _sarahro = SarahRo(sarahroAddress);
         require(msg.sender == _sarahro.owner(), "ICO: only the owner of the SRO can deploy this ICO");
-        _endIco = block.timestamp + 2 weeks;
         _rate = 1e9;
-        _supply = amountToSell;
-    } 
+    }
+
+    /**
+     * @dev start ico :
+     * @param supply_ We will set a supply to sell.
+     * @notice We will also set up a timer for 2weeks that will allow investor to buy the tokens of this ico.
+     *
+     *  Requirement:
+     *
+     * - `msg.sender` must be the owner of this contract. 
+     * - `msg.sender` must has approved the supply_ he wants to sell to this contract.
+     * - `msg.sender` can't set a supply bigger than he has approved.
+     */
+    function startIco(uint256 supply_) public onlyOwner() hasApproved(){
+        require(_sarahro.allowance(msg.sender, address(this)) >= supply_, "ICO: You can't set an amount bigger than the amount you approved to this contract");
+        _endIco = block.timestamp + 2 weeks;
+        _supply = supply_;
+    }
 
     /**
      * @dev receive and buy token :
@@ -117,12 +140,12 @@ contract ICO is Ownable {
     }
 
     /**
-    * @dev supply remaining to be sold :
+    * @dev token price :
     *      
     * @return the price (in ether) of 1 SRO. 
     */
     function tokenPrice() public view returns (uint256) {
-        return _supply - _sarahro.allowance(owner(), address(this));
+        return _rate;
     }
 
     /**
@@ -169,19 +192,6 @@ contract ICO is Ownable {
     */
     function rate() public view returns (uint256) {
         return _rate;
-    }
-
-    /**
-    * @dev time remaining :
-    *      
-    * @return a sentance describing how many time remain until the end of this ico.
-    */
-    function timeRemaining() public view returns(string memory, uint256, string memory, uint256, string memory, uint256, string memory, uint256, string memory) {
-        uint256 day_ = ((_endIco - block.timestamp)  % 1209600) / 86400;
-        uint256 hour_ = ((_endIco - block.timestamp)  % 86400) / 3600;
-        uint256 minute_ = ((_endIco - block.timestamp)  % 3600) / 60;
-        uint256 seconde_ = ((_endIco - block.timestamp)  % 60);
-        return ("il reste: ", day_, "jours, ", hour_, "heures, ", minute_, "minutes, ", seconde_, "secondes avant que l'ico se termine");
     }
 
     /**
