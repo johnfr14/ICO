@@ -56,6 +56,7 @@ describe('ICO', () => {
     ICO = await ethers.getContractFactory('ICO');
     ico = await ICO.connect(owner).deploy(sarahRo.address, ethers.utils.parseEther('500000000'));
     await ico.deployed();
+    await sarahRo.connect(owner).approve(ico.address, ethers.utils.parseEther('500000000'));
     });
      
     describe('Deployment ICO', function () {
@@ -64,9 +65,10 @@ describe('ICO', () => {
       });
 
       it("Should has start counting time until the end of the ICO", async function () {
+        expect(await ico.secondeRemaining()).to.equal(1209599);
         await ethers.provider.send('evm_increaseTime', [10]);
         await ethers.provider.send('evm_mine');
-        expect(await ico.secondeRemaining()).to.equal(1209590);
+        expect(await ico.secondeRemaining()).to.equal(1209589);
       });
 
       it("Should has a rate as given when owner deployed the contract", async function () {
@@ -82,7 +84,6 @@ describe('ICO', () => {
       });
 
       it("Should give the change to the balance of msg.sender depending of the exchange rate between SRO and ETH tokens", async function () {
-        await sarahRo.connect(owner).approve(ico.address, ethers.utils.parseEther('500000000'))
         await alice.sendTransaction({value: (await ethers.utils.parseEther('0.000000001')), to: ico.address});
         expect(await ico.connect(alice).balanceOf(alice.address)).to.equal(await ethers.utils.parseEther('1'));
       });
@@ -178,13 +179,15 @@ describe("Calculator", () => {
     ICO = await ethers.getContractFactory('ICO');
     ico = await ICO.connect(owner).deploy(sarahRo.address, ethers.utils.parseEther('500000000'));
     await ico.deployed();
+    await sarahRo.connect(owner).approve(ico.address, ethers.utils.parseEther('500000000'));
+    await sarahRo.connect(owner).transfer(alice.address, 20)
+    await sarahRo.connect(owner).transfer(bob.address, 20)
 
     CALCULATOR = await ethers.getContractFactory('Calculator');
     calculator = await CALCULATOR.connect(owner).deploy(sarahRo.address);
     await calculator.deployed();
-
-    await alice.sendTransaction({value: (await ethers.utils.parseEther('0.2')), to: ico.address})
-    await ico.connect(bob).buyTokens({value: (await ethers.utils.parseEther('0.015'))})
+    await sarahRo.connect(alice).approve(calculator.address, ethers.utils.parseEther('500000000'));
+    await sarahRo.connect(bob).approve(calculator.address, ethers.utils.parseEther('500000000'));
   });
 
   describe('Deployment calculator', function () {
@@ -195,12 +198,13 @@ describe("Calculator", () => {
 
   describe('function add()', function () {
     it("should revert if msg.sender does not have any SRO", async function () {
+      await sarahRo.connect(charlie).approve(calculator.address, ethers.utils.parseEther('500000000'));
       await expect(calculator.connect(charlie).add(1, 2)).to.revertedWith("Calculator: not enought money, you need pay at least 1 SRO to execute the function")
     });
 
-    it("should approve infinit amount to pay the function", async function () {
-      await calculator.connect(alice).add(1,2);
-       expect(await sarahRo.allowance(alice.address, calculator.address)).to.equal((1^100000) - 1 )
+    it("should revert if msg.sender has not approved calculator", async function () {
+      await sarahRo.connect(owner).transfer(charlie.address, 20)
+      await expect(calculator.connect(charlie).add(1,2)).to.revertedWith("Calculator: you have to approve this contract first to use functions")
     });
 
     it("should send 1 token as fees to the owner", async function () {

@@ -179,7 +179,7 @@ contract ICO is Ownable {
         return ("il reste: ", day_, "jours, ", hour_, "heures, ", minute_, "minutes, ", seconde_, "secondes avant que l'ico se termine");
     }
 
-      /**
+    /**
     * @dev second remaining :
     *      check how many seconds it remains until the end of this ico 
     */
