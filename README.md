@@ -32,6 +32,7 @@ yarn hardhat test
 ```
 
 ## Usage
+pour la doc
 ```
 yarn run hardhat docgen
 ```
