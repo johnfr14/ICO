@@ -12,7 +12,7 @@
   Then you will deploy an ico for it !
 
   During the ico investors will be able to buy your fresh baked tokens ! Of course don't *forget*
-  to approve your `ico` contract, this contract will be able to automaticly transfert your tokens
+  to approve your **ico** contract, this contract will be able to automaticly transfert your tokens
   to the investors for a rate exchange of (1 gwei = 1 SRO).
 
   The owner will be able to withdraw the total wei gained after 2 weeks since the ico started.
