@@ -56,6 +56,7 @@ describe('ICO', () => {
     ICO = await ethers.getContractFactory('ICO');
     ico = await ICO.connect(owner).deploy(sarahRo.address);
     await ico.deployed();
+
     await sarahRo.connect(owner).approve(ico.address, ethers.utils.parseEther('500000000'));
     ico.connect(owner).startIco(ethers.utils.parseEther('500000000'))
     });

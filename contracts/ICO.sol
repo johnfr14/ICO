@@ -61,7 +61,7 @@ contract ICO is Ownable {
         _sarahro = SarahRo(sarahroAddress);
         require(msg.sender == _sarahro.owner(), "ICO: only the owner of the SRO can deploy this ICO");
         _rate = 1e9;
-    }
+        }
 
     /**
      * @dev start ico :

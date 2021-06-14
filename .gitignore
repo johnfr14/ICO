@@ -6,4 +6,6 @@ artifacts
 
 #vsCode
 .vscode
+
+#dotenv
 .env
